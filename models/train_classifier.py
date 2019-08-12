@@ -2,7 +2,7 @@ import sys
 
 
 def load_data(database_filepath):
-    pass
+
 
 
 def tokenize(text):

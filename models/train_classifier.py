@@ -15,8 +15,10 @@ from sklearn.multioutput import MultiOutputClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report
 from sklearn.externals import joblib
+
 nltk.download(['punkt', 'stopwords', 'wordnet'])
 warnings.filterwarnings('ignore')
+
 
 def load_data(database_filepath):
     engine = create_engine('sqlite:///' + database_filepath)
@@ -24,8 +26,7 @@ def load_data(database_filepath):
     X = df["message"]
     Y = df.drop(['id', 'message', 'original', 'genre'], axis=1)
     Y['related'] = Y['related'].map(lambda x: 1 if x == 2 else x)
-    features = Y.columns
-    return X, Y, features
+    return X, Y
 
 
 def tokenize(text):
@@ -50,11 +51,11 @@ def build_model():
         'clf__estimator__min_samples_split': [2, 3, 4],
     }
 
-    model = GridSearchCV(pipeline, param_grid=parameters, verbose=3)
+    model = GridSearchCV(pipeline, param_grid=parameters, verbose=3, cv=3)
     return model
 
 
-def evaluate_model(model, X_test, Y_test, category_names):
+def evaluate_model(model, X_test, Y_test):
     Y_pred = model.predict(X_test)
     print('Overall Accuracy: {}'.format(np.mean(Y_test.values == Y_pred)))
     print('Printing classification report')
@@ -64,7 +65,7 @@ def evaluate_model(model, X_test, Y_test, category_names):
 
 
 def save_model(model, model_filepath):
-    #https://stackoverflow.com/questions/10592605/save-classifier-to-disk-in-scikit-learn
+    # https://stackoverflow.com/questions/10592605/save-classifier-to-disk-in-scikit-learn
     joblib.dump(model, model_filepath)
 
 
@@ -72,7 +73,7 @@ def main():
     if len(sys.argv) == 3:
         database_filepath, model_filepath = sys.argv[1:]
         print('Loading data...\n    DATABASE: {}'.format(database_filepath))
-        X, Y, category_names = load_data(database_filepath)
+        X, Y = load_data(database_filepath)
         X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2)
 
         print('Building model...')
@@ -82,7 +83,7 @@ def main():
         model.fit(X_train, Y_train)
 
         print('Evaluating model...')
-        evaluate_model(model, X_test, Y_test, category_names)
+        evaluate_model(model, X_test, Y_test)
 
         print('Saving model...\n    MODEL: {}'.format(model_filepath))
         save_model(model, model_filepath)

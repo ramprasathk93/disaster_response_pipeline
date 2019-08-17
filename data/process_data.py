@@ -4,6 +4,14 @@ from sqlalchemy import create_engine
 
 
 def load_data(messages_filepath, categories_filepath):
+    """
+    - Loads messages and their categories from the given two csv files
+    - Merge two dataframes based on the primary key 'id'
+
+    :param messages_filepath: CSV file for disaster messsages
+    :param categories_filepath: CSV file for response category
+    :return: merged dataframe
+    """
     messages = pd.read_csv(messages_filepath)
     categories = pd.read_csv(categories_filepath)
     df = pd.merge(categories, messages, on='id', how='outer')
@@ -11,6 +19,15 @@ def load_data(messages_filepath, categories_filepath):
 
 
 def clean_data(df):
+    """
+    Clean and transforms the data in the following manner.
+    - Splits the category column based on the ';' delimiter
+    - Have only the values 0 and 1 in the records and make the remaining string as a column header
+    - Concatenate all the split columns with the original dataframe
+
+    :param df: dataframe to be cleaned and transformed
+    :return: cleaned and transformed dataframe
+    """
     categories = df.categories.str.split(";", expand=True)
     row = categories.iloc[0][:]
     category_colnames = row.apply(lambda x: x.split("-")[0])
@@ -28,6 +45,12 @@ def clean_data(df):
 
 
 def save_data(df, database_filename):
+    """
+    Save the cleaned dataframe as a table in a SQLite database
+
+    :param df: dataframe to be converted to a MySQL database table
+    :param database_filename: SQLite database name
+    """
     engine = create_engine('sqlite:///' + database_filename)
     df.to_sql('messages_categories', engine, index=False)
 

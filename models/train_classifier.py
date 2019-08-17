@@ -21,6 +21,13 @@ warnings.filterwarnings('ignore')
 
 
 def load_data(database_filepath):
+    """
+    Load the messages_categories table from the SQLite database file
+
+    :param database_filepath: SQLite database filepath
+    :return: X: dataframe with all the disaster messages
+    :return: Y: dataframe with all the respective classification category
+    """
     engine = create_engine('sqlite:///' + database_filepath)
     df = pd.read_sql_table('messages_categories', con=engine)
     X = df["message"]
@@ -30,6 +37,15 @@ def load_data(database_filepath):
 
 
 def tokenize(text):
+    """
+    Tokenize the given text with the following steps:
+    - Pick only alphanumeric text and make everything lowercase
+    - Lemmatise all the words as a verb
+    - Remove the stopwords
+
+    :param text: set of words to be used in training the classifier
+    :return: set of tokens for training the model
+    """
     text = re.sub(r"[^a-zA-Z0-9]", " ", text.lower())  # normalize
     lemmatizer = WordNetLemmatizer()
     words = word_tokenize(text)  # tokenize
@@ -40,6 +56,15 @@ def tokenize(text):
 
 
 def build_model():
+    """
+    Build a pipeline model and use grid search for tuning the hyper parameters
+    Pipeline uses the following classes in the sequence:
+    1. CountVectorizer
+    2. Tf-Idf transformer
+    3. Random Forest Classifier
+
+    :return: Grid search model ready to fit
+    """
     pipeline = Pipeline([
         ("count", CountVectorizer(tokenizer=tokenize)),
         ("tfidf", TfidfTransformer()),
@@ -56,6 +81,15 @@ def build_model():
 
 
 def evaluate_model(model, X_test, Y_test):
+    """
+    Evaluate the fitted model with the testing data.
+    Uses the classification report from sklearn for evaluating each message category
+
+    :param model: Fitted model
+    :param X_test: Testing features
+    :param Y_test: Testing labels
+
+    """
     Y_pred = model.predict(X_test)
     print('Overall Accuracy: {}'.format(np.mean(Y_test.values == Y_pred)))
     print('Printing classification report')
@@ -65,6 +99,12 @@ def evaluate_model(model, X_test, Y_test):
 
 
 def save_model(model, model_filepath):
+    """
+    Save the trained model in a pickle file using sklearn's joblib
+
+    :param model: Trained model
+    :param model_filepath: Path to save the pickle file
+    """
     # https://stackoverflow.com/questions/10592605/save-classifier-to-disk-in-scikit-learn
     joblib.dump(model, model_filepath)
 

@@ -2,7 +2,7 @@ import json
 import warnings
 import plotly
 import pandas as pd
-import numpy
+import matplotlib
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
 from wordcloud import WordCloud, STOPWORDS
@@ -40,36 +40,14 @@ model = joblib.load("models/classifier.pkl")
 @app.route('/index')
 def index():
     
-    # extract data needed for visuals
-    # TODO: Below is an example - modify to extract data for your own visuals
-    genre_counts = df.groupby('genre').count()['message']
-    genre_names = list(genre_counts.index)
-
     messages = df["message"]
     text = tokenize(' '.join(messages))
     wordcloud_json = plotly_wordcloud(text)
+    barplot_json = stack_barplot(df)
 
     # create visuals
-    # TODO: Below is an example - modify to create your own visuals
     graphs = [
-        {
-            'data': [
-                Bar(
-                    x=genre_names,
-                    y=genre_counts
-                )
-            ],
-
-            'layout': {
-                'title': 'Distribution of Message Genres',
-                'yaxis': {
-                    'title': "Count"
-                },
-                'xaxis': {
-                    'title': "Genre"
-                }
-            }
-        },
+        barplot_json,
         wordcloud_json
     ]
     
@@ -132,7 +110,7 @@ def plotly_wordcloud(text):
     for i in freq_list:
         new_freq_list.append(i * 100)
 
-    plotly_json = {
+    wordcloud_json = {
         'data': [
             Scatter(
                 x=x,
@@ -153,7 +131,30 @@ def plotly_wordcloud(text):
         }
     }
 
-    return plotly_json
+    return wordcloud_json
+
+def stack_barplot(df):
+    categories = df.iloc[:, 4:].sum().sort_values(ascending=False)
+    genres = df.groupby('genre').sum()[categories.index[:10]]
+    data = []
+    for cat in genres.columns[1:]:
+        data.append(Bar(
+            x=genres.index,
+            y=genres[cat],
+            name=cat)
+        )
+
+    barplot_json = {
+        'data': data,
+        'layout': {
+            'title': 'Categories per genre (Top 10)',
+            'xaxis': {'title': 'Genres', 'tickangle': 45},
+            'yaxis': {'title': '# of Messages per Category', 'tickfont': {'color': 'color_bar'}},
+            'barmode': 'stack'
+        }
+    }
+
+    return barplot_json
 
 def main():
     app.run(host='0.0.0.0', port=3001, debug=True)

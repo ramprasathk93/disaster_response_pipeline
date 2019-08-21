@@ -30,6 +30,7 @@ def clean_data(df):
     """
     categories = df.categories.str.split(";", expand=True)
     row = categories.iloc[0][:]
+    #get the binary values
     category_colnames = row.apply(lambda x: x.split("-")[0])
     categories.columns = category_colnames
     for column in categories:

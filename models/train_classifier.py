@@ -49,7 +49,7 @@ def tokenize(text):
     text = re.sub(r"[^a-zA-Z0-9]", " ", text.lower())  # normalize
     lemmatizer = WordNetLemmatizer()
     words = word_tokenize(text)  # tokenize
-    tokens = [lemmatizer.lemmatize(word, pos="v") for word in words]
+    tokens = [lemmatizer.lemmatize(word, pos="v") for word in words] #lemmatize as verbs
     stop_words_set = stopwords.words("english")  # load stop words
     words = [word for word in tokens if word not in stop_words_set]  # remove stop words
     return words
@@ -131,9 +131,9 @@ def main():
         print('Trained model saved!')
 
     else:
-        print('Please provide the filepath of the disaster messages database ' \
-              'as the first argument and the filepath of the pickle file to ' \
-              'save the model to as the second argument. \n\nExample: python ' \
+        print('Please provide the filepath of the disaster messages database '
+              'as the first argument and the filepath of the pickle file to '
+              'save the model to as the second argument. \n\nExample: python '
               'train_classifier.py ../data/DisasterResponse.db classifier.pkl')
 
 

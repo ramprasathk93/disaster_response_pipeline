@@ -11,10 +11,11 @@ from flask import render_template, request, jsonify
 from plotly.graph_objs import Bar, Scatter
 from sqlalchemy import create_engine
 from sklearn.externals import joblib
+
 warnings.filterwarnings('ignore')
 
-
 app = Flask(__name__)
+
 
 def tokenize(text):
     tokens = word_tokenize(text)
@@ -26,6 +27,7 @@ def tokenize(text):
         clean_tokens.append(clean_tok)
 
     return clean_tokens
+
 
 # load data
 engine = create_engine('sqlite:///data/DisasterResponse.db')
@@ -39,8 +41,8 @@ model = joblib.load("models/classifier.pkl")
 @app.route('/')
 @app.route('/index')
 def index():
-    
     messages = df["message"]
+    #load the entire text as a list for wordcloud
     text = tokenize(' '.join(messages))
     wordcloud_json = plotly_wordcloud(text)
     barplot_json = stack_barplot(df)
@@ -50,11 +52,11 @@ def index():
         barplot_json,
         wordcloud_json
     ]
-    
+
     # encode plotly graphs in JSON
     ids = ["graph-{}".format(i) for i, _ in enumerate(graphs)]
     graphJSON = json.dumps(graphs, cls=plotly.utils.PlotlyJSONEncoder)
-    
+
     # render web page with plotly graphs
     return render_template('master.html', ids=ids, graphJSON=graphJSON)
 
@@ -63,7 +65,7 @@ def index():
 @app.route('/go')
 def go():
     # save user input in query
-    query = request.args.get('query', '') 
+    query = request.args.get('query', '')
 
     # use model to predict classification for query
     classification_labels = model.predict([query])[0]
@@ -76,7 +78,16 @@ def go():
         classification_result=classification_results
     )
 
+
 def plotly_wordcloud(text):
+    """
+    The function prepares a word cloud json for rendering in plotly
+    It takes a list of entire tokenized data and prepare a word cloud
+
+    :param text: List of tokens in the training dataset
+    :return: JSON of plotly data
+    """
+    #convert into a single string for generating word cloud
     full_string = (" ").join(text)
     wc = WordCloud(stopwords=set(STOPWORDS),
                    max_words=200,
@@ -105,7 +116,7 @@ def plotly_wordcloud(text):
         x.append(i[0])
         y.append(i[1])
 
-    # get the relative occurence frequencies
+    # get the relative occurrence frequencies
     new_freq_list = []
     for i in freq_list:
         new_freq_list.append(i * 100)
@@ -125,7 +136,7 @@ def plotly_wordcloud(text):
         ],
 
         'layout': {
-            'title': 'Word Cloud of frequent words',
+            'title': 'Frequent words used in a disaster message',
             'xaxis': {'showgrid': False, 'showticklabels': False, 'zeroline': False},
             'yaxis': {'showgrid': False, 'showticklabels': False, 'zeroline': False}
         }
@@ -133,9 +144,17 @@ def plotly_wordcloud(text):
 
     return wordcloud_json
 
+
 def stack_barplot(df):
+    """
+    Stacked barplot showing the top 10 categories inside each genre
+
+    :param df: dataframe of the entire of training dataset
+    :return: JSON for plotly data
+    """
     categories = df.iloc[:, 4:].sum().sort_values(ascending=False)
-    genres = df.groupby('genre').sum()[categories.index[:10]]
+    #top 10 categories based on the top genres
+    genres = df.groupby('genre').sum()[categories.index[:11]]
     data = []
     for cat in genres.columns[1:]:
         data.append(Bar(
@@ -155,6 +174,7 @@ def stack_barplot(df):
     }
 
     return barplot_json
+
 
 def main():
     app.run(host='0.0.0.0', port=3001, debug=True)
